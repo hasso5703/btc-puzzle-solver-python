@@ -9,9 +9,10 @@ import time
 from pathlib import Path
 import sys
 
-random.seed(571)
+seed = time.time()
+random.seed(seed)
 
-DIR_DATA = Path(r'/Users/hasan/PycharmProjects/puzzle/data/')  # ENTER YOUR DATA DIRECTORY PATH HERE
+DIR_DATA = Path('data')  # ENTER YOUR DATA DIRECTORY PATH HERE
 DATA_FILE = Path(DIR_DATA, 'puzzles_data.csv')
 try:
     df = pd.read_csv(DATA_FILE)
@@ -48,8 +49,8 @@ def worker(start_range, end_range, target_address, output_file, process_id, foun
             with open(output_file, 'a') as f:
                 f.write(result_string)
             found_flag.value = True
-            for _ in range(7):
-                os.system("say 'puzzle résolu'")
+            for _ in range(5):
+                os.system("say 'résolu, trouvé'")
             break
 
         # Print the progress every 20000 keys
@@ -124,12 +125,12 @@ def verifier_numero_puzzle(nb_puzzle):
 
 
 if __name__ == '__main__':
-    nb = choisir_puzzle()
+    nb_puzzle = choisir_puzzle()
     print("=" * 15, "BTC PUZZLE SOLVER", "=" * 15)
-    print("Puzzle choisi : ", nb)
-    if not verifier_numero_puzzle(nb):
+    print("Puzzle choisi : ", nb_puzzle)
+    if not verifier_numero_puzzle(nb_puzzle):
         print("=" * 30)
-        print("Pas de données trouvée pour le puzzle ", nb)
+        print("Pas de données trouvée pour le puzzle ", nb_puzzle)
         print("Ajoutez les données de ce puzzle à la fin du fichier csv !")
         print("Exemple : (séparer par des virgules) 'puzzle_number','hex','start_key','stop_key'")
         print("'126','1AWCLZAjKbV1P7AHvaPNCKiB7ZWVDMxFiz','20000000000000000000000000000000',"
@@ -140,10 +141,10 @@ if __name__ == '__main__':
               "'000000000000000000000000000000003fffffffffffffffffffffffffffffff'")
         print("=" * 30)
         print("Liste des puzzles disponibles : ")
-        print(list(set(df.puzzle_number)))
+        print(sorted(list(set(df.puzzle_number))))
         sys.exit()
     else:
-        data = load_data(nb)
+        data = load_data(nb_puzzle)
     print("Mode de recherche : Random")
     print("=" * 30)
     found_flag = multiprocessing.Value('i', 0)
@@ -163,21 +164,26 @@ if __name__ == '__main__':
     start_range = data["start_range"]
     stop_range = data["stop_range"]
     target = data["hex"]
+    nb_possibilite = stop_range - start_range
+    nb_possibilite_formate = '{:,}'.format(nb_possibilite).replace(',', ' ')
+    print("Nombre de possibilités : ", nb_possibilite_formate)
+    print("-" * 30)
     print("Début de la recherche ! :")
-    initial_start_range = start_range
-    start_range = int(start_range*1.53)
-    stop_range = start_range + int(0.1*initial_start_range)
     total_range = stop_range - start_range
     step = total_range // num_processes
-    print(step)
     for i in range(num_processes):
-        sub_start = start_range + int((i * step))
-        sub_end = start_range + int(((i + 1) * step)) if i < (num_processes - 1) else stop_range
-        print(sub_start, sub_end)
+        sub_start = start_range + int(i * step)
+        sub_end = start_range + int((i + 1) * step) if i < (num_processes - 1) else stop_range
+        print(f"range process {i} : ", sub_start, " -> ", sub_end)
         process = multiprocessing.Process(target=worker, args=(
-            sub_start, sub_end, target, "data/puzzles.txt", i, found_flag))
+            sub_start, sub_end, target, str(Path(DIR_DATA) / ("puzzle_" + str(nb_puzzle) + ".txt")), i, found_flag))
         processes.append(process)
         process.start()
+
+    while not found_flag.value:
+        time.sleep(10)  # Attendez une seconde avant de vérifier à nouveau
+    for process in processes:
+        process.terminate()  # Arrêtez tous les processus
 
     for process in processes:
         process.join()
