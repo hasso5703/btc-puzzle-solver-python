@@ -33,12 +33,19 @@ def valid_hex_range(option):
     raise argparse.ArgumentTypeError(f'Invalid hex range: {option}')
 
 
-def worker(start_range, end_range, target_address, output_file, process_id, found_flag):
+def worker(start_range, end_range, target_address, output_file, process_id, found_flag, nb_puzzle):
     hex_count = 0
     start_time = time.perf_counter()
 
+    if nb_puzzle == 66:
+        nb1 = 130_000_000
+        nb2 = (325_000_000+37_000_000)
+    else:
+        nb1 = 0
+        nb2 = 0
+
     while True:
-        i = random.randint((start_range + 130_000_000),(end_range + 1) - (325_000_000+37_000_000))  # generate_random_number(start_range, end_range)
+        i = random.randint((start_range + nb1), (end_range + 1) - nb2)  # generate_random_number(start_range, end_range)
         priv_key_hex = format(i, 'x').zfill(64)
         key = Key.from_hex(priv_key_hex)
         address = key.address
@@ -187,7 +194,7 @@ if __name__ == '__main__':
         sub_end = start_range + int((i + 1) * step) if i < (num_processes - 1) else stop_range
         print(f"range process {i} : ", sub_start, " -> ", sub_end)
         process = multiprocessing.Process(target=worker, args=(
-            sub_start, sub_end, target, str(Path(DIR_DATA) / ("puzzle_" + str(nb_puzzle) + ".txt")), i, found_flag))
+            sub_start, sub_end, target, str(Path(DIR_DATA) / ("puzzle_" + str(nb_puzzle) + ".txt")), i, found_flag, nb_puzzle))
         processes.append(process)
         process.start()
 
