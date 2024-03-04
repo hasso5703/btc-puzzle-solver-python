@@ -36,13 +36,20 @@ def valid_hex_range(option):
 def worker(start_range, end_range, target_address, output_file, process_id, found_flag):
     hex_count = 0
     start_time = time.perf_counter()
+
     while True:
-        i = random.randint(start_range, end_range)
+        i = random.randint((start_range + 130_000_000),(end_range + 1) - (325_000_000+37_000_000))  # generate_random_number(start_range, end_range)
         priv_key_hex = format(i, 'x').zfill(64)
         key = Key.from_hex(priv_key_hex)
         address = key.address
         hex_count += 1
-
+        """
+                for i in range((end_range+1)-325_000_000, (start_range+130_000_000), -1):  # Génère séquentiellement les nombres dans le segment
+        priv_key_hex = format(i, 'x').zfill(64)
+        key = Key.from_hex(priv_key_hex)
+        address = key.address
+        hex_count += 1
+        """
         if address == target_address:
             print(f'\nPrivate Key: {priv_key_hex}, Address: {address}')
             result_string = f'Private Key: {priv_key_hex}, Address: {address}\n'
@@ -50,11 +57,11 @@ def worker(start_range, end_range, target_address, output_file, process_id, foun
                 f.write(result_string)
             found_flag.value = True
             for _ in range(5):
-                os.system("say 'résolu, trouvé'")
+                os.system("say 'tu es devenu riche !'")
             break
 
         # Print the progress every 20000 keys
-        if hex_count % 100000 == 0:
+        if hex_count % 200000 == 0:
             elapsed_time = time.perf_counter() - start_time
             elapsed_time = elapsed_time if elapsed_time > 0 else 1
             formatted_time = f'{int(elapsed_time // 3600)}:{int((elapsed_time % 3600) // 60):02d}:{int(elapsed_time % 60):02d}'
@@ -169,6 +176,10 @@ if __name__ == '__main__':
     print("Nombre de possibilités : ", nb_possibilite_formate)
     print("-" * 30)
     print("Début de la recherche ! :")
+    # start_range = start_range+int(start_range*0.08)
+    # start_range = start_range + int(start_range_initial * 0)
+    # stop_range = start_range + 1_000_000
+    print(start_range, stop_range)
     total_range = stop_range - start_range
     step = total_range // num_processes
     for i in range(num_processes):
